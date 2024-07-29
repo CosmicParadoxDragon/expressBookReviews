@@ -20,37 +20,59 @@ public_users.post("/register", (req,res) => {
     return res.status(404).json({message: "Please enter username and password."});
 });
 
+let book_list_promise = new Promise((resolve, reject) => {
+    resolve(JSON.stringify(books, null, 4));
+});
+    
 // Get the book list available in the shop
-public_users.get('/',function (req, res) {
-    return res.send(JSON.stringify(books, null, 4));
+public_users.get('/', function (req, res) {
+    book_list_promise.then(
+        function (result) { return res.send(result) }
+    )
 });
 
+function isbn_promise (isbn) {
+    return new Promise((resolve, reject) => {
+        resolve(JSON.stringify(books[isbn], null, 4));
+    });
+};
+
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
-    const isbn = req.params.isbn;
-    return res.send(JSON.stringify(books[isbn], null, 4));
- });
-  
+public_users.get('/isbn/:isbn', function (req, res) {
+    isbn_promise(req.params.isbn).then(result => res.send(result));
+});
+
+function author_promise (author) {
+    return new Promise((res, rej) => {
+        let booksByAuthor = [];
+        for (const book in books) {
+            if (books[book].author === author ) {
+                booksByAuthor.push(books[book]);
+            }
+        }
+        res(JSON.stringify(booksByAuthor, null, 4))
+    })
+}
 // Get book details based on author
 public_users.get('/author/:author',function (req, res) {
-    const author = req.params.author;
-    let booksByAuthor = [];
-    for (const book in books) {
-        if (books[book].author === author ) {
-            booksByAuthor.push(books[book]);
-        }
-    }
-    return res.send(JSON.stringify(booksByAuthor, null, 4));
+    author_promise(req.params.author).then(result => res.send(result));
 });
+
+function title_promise(title) {
+    return new Promise((res, rej) => {
+        for (const book in books) {
+            if (books[book].title === title ) {
+                res(JSON.stringify(books[book]));
+            }
+        }
+
+    })
+}
 
 // Get all books based on title
 public_users.get('/title/:title',function (req, res) {
-    const title = req.params.title;
-    for (const book in books) {
-        if (books[book].title === title ) {
-            return res.send(JSON.stringify(books[book]));
-        }
-    }
+    title_promise(req.params.title).then(result => res.send(result));
+    
 });
 
 //  Get book review

@@ -31,16 +31,56 @@ const authenticatedUser = (username,password)=>{ //returns boolean
 
 //only registered users can login
 regd_users.post("/login", (req,res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+    const username = req.body.username;
+    const password = req.body.password;
+
+    if (!username || !password) {
+        return res.status(404).json({ message: "Please Enter a username and password." });
+    }
+
+    if (authenticatedUser(username, password)) {
+        let accessToken =  jwt.sign({
+            data: password
+        }, 'access', { expiresIn: '1h' });
+
+        req.session.authorization = {
+            accessToken, username
+        }
+        return res.status(200).json({ message: "Successfully logged in." });
+    } else {
+        return res.status(208).json({ message: "Invalid Login Credentials. Check Username or Password"});
+    }
 });
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+    const isbn = req.params.isbn;
+    const user = req.session.authorization['username'];
+    if (books[isbn].reviews[user]) {
+
+        books[isbn].reviews[user]['rating'] = req.body.rating;
+        books[isbn].reviews[user]['text'] = req.body.text;
+        return res.status(200).json({ message: "Review Updated." });
+    } else {
+        books[isbn].reviews[user] = {
+            "rating": req.body.rating,
+            "text": req.body.text
+        }
+        return res.status(200).json({ message: "Review Added." });
+    }
 });
 
+// Delete a book review
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+    const isbn = req.params.isbn;
+    const user = req.session.authorization['username'];
+    if (books[isbn].reviews[user]) {
+        delete books[isbn].reviews[user];
+        return res.status(200).json({message: "Review deleted."});
+    } else {
+        return res.status(404).json({message: "You have no review posted."})
+    }
+})
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
 module.exports.users = users;
